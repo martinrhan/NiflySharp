@@ -1163,6 +1163,7 @@ namespace NiflySharp.Bitfields
                 if (nifObject.IsStruct)
                 {
                     // Empty property for block references
+                    // FIXME: A lot of structs don't need this. Solve missing property differently?
                     fieldsSection +=
                         "\r\n" +
                         $"        public IEnumerable<INiRef> References\r\n" +
@@ -1213,6 +1214,7 @@ namespace NiflySharp.Bitfields
                 if (nifObject.IsStruct)
                 {
                     // Empty property for block pointers
+                    // FIXME: A lot of structs don't need this. Solve missing property differently?
                     fieldsSection +=
                         "\r\n" +
                         $"        public IEnumerable<INiRef> Pointers\r\n" +
@@ -1263,6 +1265,7 @@ namespace NiflySharp.Bitfields
                 if (nifObject.IsStruct)
                 {
                     // Empty property for block reference arrays
+                    // FIXME: A lot of structs don't need this. Solve missing property differently?
                     fieldsSection +=
                         "\r\n" +
                         $"        public IEnumerable<NiRefArray> ReferenceArrays\r\n" +
@@ -1313,6 +1316,7 @@ namespace NiflySharp.Bitfields
                 if (nifObject.IsStruct)
                 {
                     // Empty property for string references
+                    // FIXME: A lot of structs don't need this. Solve missing property differently?
                     fieldsSection +=
                         "\r\n" +
                         $"        public IEnumerable<NiStringRef> StringRefs\r\n" +
