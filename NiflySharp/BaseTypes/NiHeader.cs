@@ -482,7 +482,7 @@ namespace NiflySharp
         /// Adds the block type index entry and block size entry for the new block <paramref name="newBlock"/>
         /// </summary>
         /// <param name="newBlock">New block</param>
-        public void AddBlockInfo(NiObject newBlock)
+        public void AddBlockInfo(INiObject newBlock)
         {
             string blockTypeName = newBlock.GetType().Name;
             ushort blockTypeIndex = AddOrFindBlockTypeIndex(blockTypeName);

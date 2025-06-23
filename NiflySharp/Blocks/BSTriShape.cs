@@ -22,11 +22,11 @@ namespace NiflySharp.Blocks
         public NiBlockRef<NiGeometryData> DataRef { get => null; set { } }
 
         public bool HasSkinInstance => !SkinInstanceRef?.IsEmpty() ?? false;
-        INiRef INiShape.SkinInstanceRef { get => _skin; set => throw new NotSupportedException("Ref can only be set using the explicit block ref type."); }
+        INiRef INiShape.SkinInstanceRef { get => _skin; }
         public NiBlockRef<NiObject> SkinInstanceRef { get => _skin; set => _skin = value; }
 
         public bool HasShaderProperty => !ShaderPropertyRef?.IsEmpty() ?? false;
-        INiRef INiShape.ShaderPropertyRef { get => _shaderProperty; set => throw new NotSupportedException("Ref can only be set using the explicit block ref type."); }
+        INiRef INiShape.ShaderPropertyRef { get => _shaderProperty; }
         public NiBlockRef<BSShaderProperty> ShaderPropertyRef { get => _shaderProperty; set => _shaderProperty = value; }
 
         public bool HasAlphaProperty => !AlphaPropertyRef?.IsEmpty() ?? false;

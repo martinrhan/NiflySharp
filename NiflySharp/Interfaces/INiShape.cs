@@ -48,10 +48,10 @@ namespace NiflySharp
         NiBlockRef<NiGeometryData> DataRef { get; set; }
 
         bool HasSkinInstance { get; }
-        INiRef SkinInstanceRef { get; set; } // INiSKin
+        INiRef SkinInstanceRef { get; } // INiSKin
 
         bool HasShaderProperty { get; }
-        INiRef ShaderPropertyRef { get; set; } // INiShader
+        INiRef ShaderPropertyRef { get; } // INiShader
 
         bool HasAlphaProperty { get; }
         NiBlockRef<NiAlphaProperty> AlphaPropertyRef { get; set; }
