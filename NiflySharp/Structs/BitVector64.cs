@@ -200,7 +200,7 @@ namespace NiflySharp.Structs
 
             public int Offset => _offset;
 
-            public override bool Equals([NotNullWhen(true)] object? o) => o is Section other && Equals(other);
+            public override bool Equals([NotNullWhen(true)] object o) => o is Section other && Equals(other);
 
             public bool Equals(Section obj)
             {
