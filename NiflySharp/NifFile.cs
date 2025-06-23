@@ -17,7 +17,7 @@ namespace NiflySharp
     /// <summary>
     /// Main class for NIF files
     /// </summary>
-    public class NifFile
+    public class NifFile : ICloneable
     {
         /// <summary>
         /// Header of the file
@@ -81,6 +81,16 @@ namespace NiflySharp
         public NifFile(System.IO.Stream stream, NifFileLoadOptions options = null)
         {
             Load(stream, options);
+        }
+
+        /// <summary>
+        /// Create empty file using the header <paramref name="header"/>. Used for cloning.
+        /// </summary>
+        /// <param name="header">Header</param>
+        protected NifFile(NiHeader header)
+        {
+            Header = header;
+            Blocks = [];
         }
 
         /// <summary>
@@ -516,6 +526,62 @@ namespace NiflySharp
         }
 
         /// <summary>
+        /// Clone the NifFile object including its blocks.
+        /// </summary>
+        /// <returns>Cloned NifFile object</returns>
+        public object Clone()
+        {
+            var clonedHeader = Header.Clone() as NiHeader;
+            var clonedNif = new NifFile(clonedHeader)
+            {
+                Valid = Valid,
+                HasUnknownBlocks = HasUnknownBlocks,
+                IsTerrainFile = IsTerrainFile
+            };
+
+            clonedNif.Blocks.Capacity = Blocks.Capacity;
+
+            foreach (var block in Blocks)
+            {
+                if (block.Clone() is INiObject clonedBlock)
+                    clonedNif.AddBlock(clonedBlock);
+            }
+
+            clonedNif.LinkGeometryData();
+            return clonedNif;
+        }
+
+        // FIXME: Implement CloneChildren
+        // FIXME: Implement CloneShape
+
+        /// <summary>
+        /// Finds and clones the first NiNode with the specified name <paramref name="nodeName"/> and returns the new object (or null).
+        /// Source block can be located in a different file (see "<paramref name="srcNif"/>" parameter).
+        /// </summary>
+        /// <param name="nodeName">Node name</param>
+        /// <param name="srcNif">Differing source file (or null for current file)</param>
+        /// <returns>New node object</returns>
+        public NiNode CloneNamedNode(string nodeName, NifFile srcNif = null)
+        {
+            srcNif ??= this;
+
+            var srcNode = FindBlockByName<NiNode>(nodeName);
+            if (srcNode == null)
+                return null;
+
+            var destNode = srcNode.Clone() as NiNode;
+            destNode.CollisionObject?.Clear();
+            destNode.Controller?.Clear();
+
+            destNode.Children?.Clear();
+            destNode.NumChildren = 0;
+
+            destNode.Effects?.Clear();
+            destNode.NumEffects = 0;
+            return destNode;
+        }
+
+        /// <summary>
         /// Gets a block reference using the block's index.
         /// </summary>
         /// <typeparam name="T">Type of the block</typeparam>
@@ -748,7 +814,7 @@ namespace NiflySharp
         /// </summary>
         /// <param name="newBlock">New block</param>
         /// <returns>New block index</returns>
-        public int AddBlock(NiObject newBlock)
+        public int AddBlock(INiObject newBlock)
         {
             Header.AddBlockInfo(newBlock);
             Blocks.Add(newBlock);

@@ -1,10 +1,10 @@
-﻿using NiflySharp.Stream;
-using System;
+﻿using NiflySharp.Helpers;
+using NiflySharp.Stream;
 using System.Collections.Generic;
 
 namespace NiflySharp
 {
-    public class NiObject : INiObject
+    public abstract class NiObject : INiObject
     {
         protected int blockSize = 0;
         protected uint groupId = 0;
@@ -13,7 +13,7 @@ namespace NiflySharp
         {
             get
             {
-                return Array.Empty<INiRef>();
+                return [];
             }
         }
 
@@ -21,7 +21,7 @@ namespace NiflySharp
         {
             get
             {
-                return Array.Empty<INiRef>();
+                return [];
             }
         }
 
@@ -29,7 +29,7 @@ namespace NiflySharp
         {
             get
             {
-                return Array.Empty<NiRefArray>();
+                return [];
             }
         }
 
@@ -37,7 +37,7 @@ namespace NiflySharp
         {
             get
             {
-                return Array.Empty<NiStringRef>();
+                return [];
             }
         }
 
@@ -48,6 +48,13 @@ namespace NiflySharp
         {
             if (stream.Version.FileVersion >= NiFileVersion.V10_0_0_0 && stream.Version.FileVersion < NiFileVersion.V10_1_0_114)
                 stream.Sync(ref groupId);
+        }
+
+        public object Clone()
+        {
+            // FIXME: Use deep copy function with reflection for now.
+            // Means not having to generate a more specific clone function into each type.
+            return DeepCopyHelper.DeepCopy(this);
         }
     }
 }

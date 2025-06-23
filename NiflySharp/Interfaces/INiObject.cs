@@ -1,8 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace NiflySharp
 {
-    public interface INiObject
+    public interface INiObject : ICloneable
     {
         IEnumerable<INiRef> References { get; }
         IEnumerable<INiRef> Pointers { get; }

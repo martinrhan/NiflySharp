@@ -561,5 +561,21 @@ namespace NiflySharp.Test
             var fileInfoExpected = new FileInfo($"{ExpectedDirectory}/{TestName}.nif");
             Assert.True(FilesAreEqual(fileInfoOutput, fileInfoExpected));
         }
+
+        [Fact(DisplayName = "Clone file")]
+        public void CloneFile()
+        {
+            const string TestName = "Clone";
+
+            var nif = new NifFile();
+            Assert.Equal(0, nif.Load($"{AssetsDirectory}/V20.2.0.7/12/100/Skinned.nif"));
+
+            var clonedNif = nif.Clone() as NifFile;
+            Assert.Equal(0, clonedNif.Save($"{OutputDirectory}/{TestName}.nif"));
+
+            var fileInfoOutput = new FileInfo($"{OutputDirectory}/{TestName}.nif");
+            var fileInfoExpected = new FileInfo($"{ExpectedDirectory}/{TestName}.nif");
+            Assert.True(FilesAreEqual(fileInfoOutput, fileInfoExpected));
+        }
     }
 }

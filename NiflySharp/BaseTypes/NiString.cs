@@ -1,6 +1,5 @@
 ﻿using NiflySharp.Stream;
-using System.Collections;
-using System.Drawing;
+using System;
 using System.Text;
 
 namespace NiflySharp
@@ -59,7 +58,7 @@ namespace NiflySharp
         }
     }
 
-    public class NiString
+    public class NiString : ICloneable
     {
         public string Content { get; set; }
 
@@ -146,6 +145,11 @@ namespace NiflySharp
                 Read(stream.In, szSize);
             else
                 Write(stream.Out, szSize);
+        }
+
+        public object Clone()
+        {
+            return MemberwiseClone();
         }
     }
 }
