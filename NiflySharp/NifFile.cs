@@ -629,7 +629,7 @@ namespace NiflySharp
         /// <typeparam name="T">Type of the block</typeparam>
         /// <param name="name">Name of the block</param>
         /// <returns>Block reference of supplied type or null</returns>
-        public T FindBlockByName<T>(string name) where T : NiObject, INiNamed
+        public T FindBlockByName<T>(string name) where T : class, INiObject, INiNamed
         {
             if (string.IsNullOrEmpty(name))
                 return null;
@@ -646,7 +646,7 @@ namespace NiflySharp
         /// <returns>Block found</returns>
         public bool GetBlockIndex(INiObject block, out int index)
         {
-            index = Blocks.IndexOf(block);
+            index = block != null ? Blocks.IndexOf(block) : -1;
             return index != -1;
         }
 

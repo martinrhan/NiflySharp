@@ -1,14 +1,13 @@
 ﻿using NiflySharp.Blocks;
+using NiflySharp.Interfaces;
 using NiflySharp.Structs;
 using System.Collections.Generic;
 using System.Numerics;
 
 namespace NiflySharp
 {
-    public interface INiShape : INiStreamable, INiObject
+    public interface INiShape : INiStreamable, INiObject, INiNamed
     {
-        NiStringRef Name { get; set; }
-
         NiBlockRef<NiTimeController> Controller { get; set; }
         NiBlockRef<NiCollisionObject> CollisionObject { get; set; }
         NiBlockRefArray<NiExtraData> ExtraDataList { get; set; }
