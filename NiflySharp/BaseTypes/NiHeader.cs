@@ -593,7 +593,7 @@ namespace NiflySharp
         /// <param name="str">String to add or find</param>
         /// <param name="addEmpty">Add empty string as new index or not</param>
         /// <returns>Added or found string index</returns>
-        public int AddOrFindStringId(string str, bool addEmpty)
+        public int AddOrFindStringId(string str, bool addEmpty = false)
         {
             for (int i = 0; i < strings.Count; i++)
                 if (strings[i].Content == str)
