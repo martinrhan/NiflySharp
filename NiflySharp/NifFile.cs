@@ -551,23 +551,128 @@ namespace NiflySharp
             return clonedNif;
         }
 
-        // FIXME: Implement CloneChildren
-        // FIXME: Implement CloneShape
+        /// <summary>
+        /// Clones child blocks recursively.
+        /// Assign new refs and strings, rebind ptrs where possible.
+        /// </summary>
+        /// <param name="block">Block to clone from</param>
+        /// <param name="srcNif">Differing source file (or null for current file)</param>
+        /// <param name="parentOldId">Old block index of the parent block (or -1 on first iteration)</param>
+        /// <param name="parentNewId">New block index of the parent block (or -1 on first iteration)</param>
+        private void CloneBlocksRec(INiObject block, NifFile srcNif = null, int parentOldId = NiRef.NPOS, int parentNewId = NiRef.NPOS)
+        {
+            srcNif ??= this;
+
+            foreach (var r in block.References)
+            {
+                var srcChild = srcNif.GetBlock<NiObject>(r);
+                if (srcChild != null)
+                {
+                    var destChild = srcChild.Clone() as INiObject;
+                    int destId = AddBlock(destChild);
+
+                    int oldId = r.Index;
+                    r.Index = destId;
+
+                    foreach (var str in destChild.StringRefs)
+                    {
+                        int strId = Header.AddOrFindStringId(str.String);
+                        str.Index = strId;
+                    }
+
+                    if (parentOldId != NiRef.NPOS)
+                    {
+                        foreach (var p in destChild.Pointers)
+                            if (p.Index == parentOldId)
+                                p.Index = parentNewId;
+
+                        CloneBlocksRec(destChild, srcNif, parentOldId, parentNewId);
+                    }
+                    else
+                        CloneBlocksRec(destChild, srcNif, oldId, destId);
+                }
+            }
+        }
+
+        private void CloneNodesRec(NiNode srcNode, NiNode rootNode = null, NifFile srcNif = null)
+        {
+            srcNif ??= this;
+            rootNode ??= GetRootNode();
+
+            string boneName = srcNode.Name.String;
+
+            // Insert as root child by default
+            NiNode nodeParent = rootNode;
+
+            // Look for existing node to use as parent instead
+            var srcNodeParent = srcNif.GetParentNode(srcNode);
+            if (srcNodeParent != null)
+            {
+                var parent = FindBlockByName<NiNode>(srcNodeParent.Name.String);
+                if (parent != null)
+                    nodeParent = parent;
+            }
+
+            var node = FindBlockByName<NiNode>(boneName);
+            if (!GetBlockIndex(node, out int boneID))
+            {
+                // Clone missing node into the right parent
+                boneID = CloneNamedNode(boneName, srcNif);
+                nodeParent.Children.AddBlockRef(boneID);
+            }
+            else
+            {
+                // Move existing node to non-root parent
+                var oldParent = GetParentNode(node);
+                if (oldParent != null && oldParent != nodeParent && nodeParent != rootNode)
+                {
+                    foreach (var r in oldParent.Children.References)
+                        if (r.Index == boneID)
+                            r.Clear();
+
+                    nodeParent.Children.AddBlockRef(boneID);
+
+                    // Set transform to parent
+                    node.TransformToParent = srcNode.TransformToParent;
+                }
+            }
+
+            // Recurse children
+            foreach (var child in srcNode.Children.References)
+            {
+                var childNode = srcNif.GetBlock<NiNode>(child);
+                if (childNode != null)
+                    CloneNodesRec(childNode, rootNode, srcNif);
+            }
+        }
 
         /// <summary>
-        /// Finds and clones the first NiNode with the specified name <paramref name="nodeName"/> and returns the new object (or null).
+        /// Clones all referenced blocks in the specified block <paramref name="block"/>.
+        /// Source block can be located in a different file (see "<paramref name="srcNif"/>" parameter).
+        /// </summary>
+        /// <param name="block">Block to clone from</param>
+        /// <param name="srcNif">Differing source file (or null for current file)</param>
+        public void CloneChildren(INiObject block, NifFile srcNif = null)
+        {
+            srcNif ??= this;
+
+            CloneBlocksRec(block, srcNif);
+        }
+
+        /// <summary>
+        /// Finds and clones the first NiNode with the specified name <paramref name="nodeName"/> and returns the new block index (or -1).
         /// Source block can be located in a different file (see "<paramref name="srcNif"/>" parameter).
         /// </summary>
         /// <param name="nodeName">Node name</param>
         /// <param name="srcNif">Differing source file (or null for current file)</param>
-        /// <returns>New node object</returns>
-        public NiNode CloneNamedNode(string nodeName, NifFile srcNif = null)
+        /// <returns>Iindex of new node block</returns>
+        public int CloneNamedNode(string nodeName, NifFile srcNif = null)
         {
             srcNif ??= this;
 
             var srcNode = FindBlockByName<NiNode>(nodeName);
             if (srcNode == null)
-                return null;
+                return NiRef.NPOS;
 
             var destNode = srcNode.Clone() as NiNode;
             destNode.CollisionObject?.Clear();
@@ -578,7 +683,127 @@ namespace NiflySharp
 
             destNode.Effects?.Clear();
             destNode.NumEffects = 0;
-            return destNode;
+
+            return AddBlock(destNode);
+        }
+
+        /// <summary>
+        /// Clones the specified shape <paramref name="srcShape"/> with a destination name <paramref name="destShapeName"/> and returns it.
+        /// Source block can be located in a different file (see parameter <paramref name="srcNif"/>).
+        /// </summary>
+        /// <param name="srcShape">Shape to clone</param>
+        /// <param name="destShapeName">Destination name of the newly cloned shape</param>
+        /// <param name="srcNif">Differing source file (or null for current file)</param>
+        /// <returns>Newly cloned shape</returns>
+        public INiShape CloneShape(INiShape srcShape, string destShapeName, NifFile srcNif = null)
+        {
+            if (srcShape == null)
+                return null;
+
+            srcNif ??= this;
+
+            var rootNode = GetRootNode();
+            var srcRootNode = srcNif.GetRootNode();
+
+            // Geometry
+            var destShape = srcShape.Clone() as INiShape;
+            destShape.Name.String = destShapeName;
+
+            int destId = AddBlock(destShape);
+            if (srcNif == this)
+            {
+                // Assign copied geometry to the same parent
+                var parentNode = GetParentNode(srcShape);
+                if (parentNode != null)
+                    parentNode.Children.AddBlockRef(destId);
+            }
+            else if (rootNode != null)
+                rootNode.Children.AddBlockRef(destId);
+
+            // Children
+            CloneChildren(destShape, srcNif);
+
+            // Geometry Data
+            var destGeomData = GetBlock<NiTriBasedGeomData>(destShape.DataRef);
+            if (destGeomData != null)
+                destShape.GeometryData = destGeomData;
+
+            // Shader
+            var destShader = GetShader(destShape);
+            if (destShader != null)
+            {
+                if (Header.Version.IsSK() || Header.Version.IsSSE())
+                {
+                    // Kill normals and tangents
+                    if (destShader.ModelSpace)
+                    {
+                        destShape.HasNormals = false;
+                        destShape.HasTangents = false;
+                    }
+                }
+            }
+
+            // Bones
+            var srcBoneList = srcNif.GetShapeBoneNames(srcShape);
+
+            var destBoneCont = GetBlock<INiSkin>(destShape.SkinInstanceRef);
+            if (destBoneCont != null)
+            {
+                destBoneCont.Bones.Clear();
+                destBoneCont.NumBones = 0;
+            }
+
+            if (rootNode != null && srcRootNode != null)
+            {
+                foreach (var child in srcRootNode.Children.References)
+                {
+                    var srcChildNode = srcNif.GetBlock<NiNode>(child);
+                    if (srcChildNode != null)
+                        CloneNodesRec(srcChildNode, rootNode, srcNif);
+                }
+            }
+
+            // Add bones to container if used in skin
+            if (destBoneCont != null)
+            {
+                foreach (var boneName in srcBoneList)
+                {
+                    var node = FindBlockByName<NiNode>(boneName);
+                    if (node != null)
+                    {
+                        if (GetBlockIndex(node, out int boneID))
+                            destBoneCont.Bones.AddBlockRef(boneID);
+                    }
+                }
+            }
+
+            return destShape;
+        }
+
+        /// <summary>
+        /// Gets a block reference using the block's index.
+        /// </summary>
+        /// <param name="blockId">Block index</param>
+        /// <returns>Block reference or null</returns>
+        public INiObject GetBlock(int blockId)
+        {
+            if (blockId == NiRef.NPOS || blockId >= Header.BlockCount)
+                return null;
+
+            return Blocks[blockId];
+        }
+
+        /// <summary>
+        /// Gets a block reference using a NiRef object.
+        /// </summary>
+        /// <param name="niRef">NiRef object</param>
+        /// <returns>Block reference or null</returns>
+        public INiObject GetBlock(INiRef niRef)
+        {
+            if (niRef == null)
+                return null;
+
+            return GetBlock(niRef.Index);
         }
 
         /// <summary>
@@ -752,6 +977,34 @@ namespace NiflySharp
             }
 
             return shader;
+        }
+
+        /// <summary>
+        /// Gets a list of all bone (node) names used by the shape.
+        /// </summary>
+        /// <param name="shape">Shape</param>
+        /// <returns>List of bone names</returns>
+        public List<string> GetShapeBoneNames(INiShape shape)
+        {
+            var boneNames = new List<string>();
+
+            if (shape == null)
+                return boneNames;
+
+            var skinInst = GetBlock<INiSkin>(shape.SkinInstanceRef);
+            if (skinInst == null)
+                return boneNames;
+
+            foreach (var bone in skinInst.Bones.References)
+            {
+                var node = GetBlock(bone);
+                if (node != null)
+                {
+                    boneNames.Add(node.Name.String);
+                }
+            }
+
+            return boneNames;
         }
 
         /// <summary>
