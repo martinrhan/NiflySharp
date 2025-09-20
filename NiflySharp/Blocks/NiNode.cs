@@ -5,6 +5,12 @@ namespace NiflySharp.Blocks
 {
     public partial class NiNode : NiAVObject
     {
+        public NiNode()
+        {
+            Children = new NiBlockRefArray<NiAVObject>();
+            Effects = new NiBlockRefArray<NiDynamicEffect>();
+        }
+
         public MatTransform TransformToParent
         {
             get

@@ -595,5 +595,28 @@ namespace NiflySharp.Test
             var fileInfoExpected = new FileInfo($"{ExpectedDirectory}/{TestName}.nif");
             Assert.True(FilesAreEqual(fileInfoOutput, fileInfoExpected));
         }
+
+        [Fact(DisplayName = "Clone shape from file")]
+        public void CloneShapeFromFile()
+        {
+            const string TestName = "CloneShapeFromFile";
+
+            var nif = new NifFile(NiVersion.GetSSE(), withRootNode: true);
+
+            var srcNif = new NifFile();
+            Assert.Equal(0, srcNif.Load($"{AssetsDirectory}/V20.2.0.7/12/100/Skinned.nif"));
+
+            var srcShape = srcNif.FindBlockByName<INiShape>("cylinder_1");
+            Assert.NotNull(srcShape);
+
+            var clonedShape = nif.CloneShape(srcShape, "cylinder_cloned", srcNif);
+            Assert.NotNull(clonedShape);
+
+            Assert.Equal(0, nif.Save($"{OutputDirectory}/{TestName}.nif"));
+
+            var fileInfoOutput = new FileInfo($"{OutputDirectory}/{TestName}.nif");
+            var fileInfoExpected = new FileInfo($"{ExpectedDirectory}/{TestName}.nif");
+            Assert.True(FilesAreEqual(fileInfoOutput, fileInfoExpected));
+        }
     }
 }
