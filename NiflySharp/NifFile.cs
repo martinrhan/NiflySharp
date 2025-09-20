@@ -670,7 +670,7 @@ namespace NiflySharp
         {
             srcNif ??= this;
 
-            var srcNode = FindBlockByName<NiNode>(nodeName);
+            var srcNode = srcNif.FindBlockByName<NiNode>(nodeName);
             if (srcNode == null)
                 return NiRef.NPOS;
 
