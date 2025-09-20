@@ -1,4 +1,4 @@
-﻿using NiflySharp.Stream;
+using NiflySharp.Stream;
 using System.Text;
 
 namespace NiflySharp
@@ -71,6 +71,10 @@ namespace NiflySharp
         public override int GetHashCode()
         {
             return _str.GetHashCode();
+        }
+
+        public override string ToString() {
+            return _str;
         }
     }
 }
