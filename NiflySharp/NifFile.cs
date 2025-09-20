@@ -310,6 +310,8 @@ namespace NiflySharp
                 }
             }
 
+            Header.UpdateHeaderStrings(Blocks, HasUnknownBlocks);
+
             Header.Write(streamWriter);
 
             var streamReversible = new NiStreamReversible(streamWriter);
@@ -521,8 +523,6 @@ namespace NiflySharp
                         DeleteBinaryTangentData(shape);
                 }
             }
-
-            Header.UpdateHeaderStrings(Blocks, HasUnknownBlocks);
         }
 
         /// <summary>
